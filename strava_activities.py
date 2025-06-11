@@ -50,7 +50,7 @@ def start_auth_server(port=8000):
 
 def get_authorization_code(client_id):
     """Get authorization code from Strava"""
-    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:8000&approval_prompt=force&scope=activity:read_all,read"
+    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:8000&approval_prompt=force&scope=activity:read_all,read_all"
     
     # Start local server
     server = start_auth_server()

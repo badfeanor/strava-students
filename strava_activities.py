@@ -55,8 +55,9 @@ def get_authorization_code(client_id):
     # Start local server
     server = start_auth_server()
     
-    # Open browser for authorization
-    webbrowser.open(auth_url)
+    # Print authorization URL instead of opening browser
+    logger.info("Please open this URL in your browser to authorize the application:")
+    logger.info(auth_url)
     
     # Wait for authorization code
     logger.info("Waiting for authorization...")

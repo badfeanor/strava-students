@@ -50,13 +50,18 @@ STRAVA_REFRESH_TOKEN=ваш_refresh_token
      ```
    - Используйте полученный refresh_token в файле .env
 
-### 3. Добавление ID студентов
+### 3. Настройка списка студентов
 
-Отредактируйте список `student_ids` в файле `strava_activities.py`, добавив ID студентов Strava:
+1. Скопируйте пример конфигурационного файла:
+```bash
+cp config.example.py config.py
+```
+
+2. Отредактируйте файл `config.py`, добавив ID студентов Strava:
 ```python
-student_ids = [
-    123456,  # ID студента 1
-    789012,  # ID студента 2
+STUDENT_IDS = [
+    123456789,  # ID студента 1
+    987654321,  # ID студента 2
     # ...
 ]
 ```
@@ -107,12 +112,14 @@ python strava_activities.py
 strava-students/
 ├── .env                    # Конфигурация API (не включен в git)
 ├── .gitignore             # Исключения для git
-├── Dockerfile             # Конфигурация Docker
-├── README.md             # Документация
-├── docker-compose.yml    # Конфигурация Docker Compose
-├── output/               # Директория для результатов
-├── requirements.txt      # Зависимости Python
-└── strava_activities.py  # Основной скрипт
+├── config.example.py      # Пример конфигурационного файла
+├── config.py             # Конфигурация со списком студентов (не включен в git)
+├── Dockerfile            # Конфигурация Docker
+├── README.md            # Документация
+├── docker-compose.yml   # Конфигурация Docker Compose
+├── output/              # Директория для результатов
+├── requirements.txt     # Зависимости Python
+└── strava_activities.py # Основной скрипт
 ```
 
 ## Лицензия

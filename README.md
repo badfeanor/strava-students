@@ -5,7 +5,7 @@
 ## Описание
 
 Скрипт выполняет следующие функции:
-- Аутентификация через Strava API с использованием OAuth 2.0
+- Автоматическая аутентификация через Strava API с использованием OAuth 2.0
 - Получение последних 10 активностей для каждого студента
 - Сохранение данных в CSV файл с подробной информацией о каждой активности
 
@@ -33,22 +33,12 @@ cd strava-students
 ```
 STRAVA_CLIENT_ID=ваш_client_id
 STRAVA_CLIENT_SECRET=ваш_client_secret
-STRAVA_REFRESH_TOKEN=ваш_refresh_token
 ```
 
-3. Получение refresh token:
-   - Перейдите по ссылке: https://www.strava.com/oauth/authorize?client_id=ВАШ_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read,activity:read
-   - Авторизуйте приложение
-   - Скопируйте код из URL после редиректа
-   - Обменяйте код на токены:
-     ```bash
-     curl -X POST https://www.strava.com/oauth/token \
-     -F client_id=ВАШ_CLIENT_ID \
-     -F client_secret=ВАШ_CLIENT_SECRET \
-     -F code=КОД_АВТОРИЗАЦИИ \
-     -F grant_type=authorization_code
-     ```
-   - Используйте полученный refresh_token в файле .env
+При первом запуске скрипт автоматически:
+1. Откроет браузер для авторизации
+2. Запросит необходимые права доступа
+3. Получит и сохранит refresh token
 
 ### 3. Настройка списка студентов
 

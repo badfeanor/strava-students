@@ -5,6 +5,11 @@ from datetime import datetime
 from dotenv import load_dotenv
 import logging
 from config import STUDENT_IDS
+import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import parse_qs, urlparse
+import threading
+import time
 
 # Настройка логирования
 logging.basicConfig(
@@ -16,6 +21,54 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+class AuthHandler(BaseHTTPRequestHandler):
+    code = None
+    
+    def do_GET(self):
+        """Handle GET request to the callback URL"""
+        query_components = parse_qs(urlparse(self.path).query)
+        
+        if 'code' in query_components:
+            AuthHandler.code = query_components['code'][0]
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"Authorization successful! You can close this window.")
+        else:
+            self.send_response(400)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"Authorization failed! No code received.")
+
+def start_auth_server(port=8000):
+    """Start a local server to receive the authorization code"""
+    server = HTTPServer(('localhost', port), AuthHandler)
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+    return server
+
+def get_authorization_code(client_id):
+    """Get authorization code from Strava"""
+    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:8000&approval_prompt=force&scope=activity:read_all,read"
+    
+    # Start local server
+    server = start_auth_server()
+    
+    # Open browser for authorization
+    webbrowser.open(auth_url)
+    
+    # Wait for authorization code
+    logger.info("Waiting for authorization...")
+    while AuthHandler.code is None:
+        time.sleep(1)
+    
+    # Shutdown server
+    server.shutdown()
+    server.server_close()
+    
+    return AuthHandler.code
+
 class StravaAPI:
     def __init__(self):
         self.client_id = os.getenv('STRAVA_CLIENT_ID')
@@ -25,15 +78,45 @@ class StravaAPI:
         self.base_url = 'https://www.strava.com/api/v3'
         
         # Проверка наличия необходимых переменных окружения
-        if not all([self.client_id, self.client_secret, self.refresh_token]):
+        if not all([self.client_id, self.client_secret]):
             missing = []
             if not self.client_id:
                 missing.append('STRAVA_CLIENT_ID')
             if not self.client_secret:
                 missing.append('STRAVA_CLIENT_SECRET')
-            if not self.refresh_token:
-                missing.append('STRAVA_REFRESH_TOKEN')
             raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+        
+        # Если нет refresh token, получаем его
+        if not self.refresh_token:
+            logger.info("No refresh token found. Starting authorization process...")
+            auth_code = get_authorization_code(self.client_id)
+            self.refresh_token = self.exchange_code_for_token(auth_code)
+            logger.info("Successfully obtained refresh token")
+        
+    def exchange_code_for_token(self, auth_code):
+        """Exchange authorization code for refresh token"""
+        try:
+            response = requests.post(
+                'https://www.strava.com/oauth/token',
+                data={
+                    'client_id': self.client_id,
+                    'client_secret': self.client_secret,
+                    'code': auth_code,
+                    'grant_type': 'authorization_code'
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data['refresh_token']
+            else:
+                logger.error(f"Failed to exchange code for token. Status code: {response.status_code}")
+                logger.error(f"Response: {response.text}")
+                raise Exception("Failed to exchange authorization code for token")
+                
+        except Exception as e:
+            logger.error(f"Error during code exchange: {str(e)}")
+            raise
         
     def get_access_token(self):
         """Exchange refresh token for a new access token"""

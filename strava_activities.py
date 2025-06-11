@@ -10,6 +10,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 import threading
 import time
+import socket
 
 # Настройка логирования
 logging.basicConfig(
@@ -20,6 +21,18 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
+
+def get_host_ip():
+    """Get host IP address"""
+    try:
+        # Создаем временный сокет для определения IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        host_ip = s.getsockname()[0]
+        s.close()
+        return host_ip
+    except Exception:
+        return "localhost"
 
 class AuthHandler(BaseHTTPRequestHandler):
     code = None
@@ -42,7 +55,8 @@ class AuthHandler(BaseHTTPRequestHandler):
 
 def start_auth_server(port=8000):
     """Start a local server to receive the authorization code"""
-    server = HTTPServer(('localhost', port), AuthHandler)
+    host_ip = get_host_ip()
+    server = HTTPServer((host_ip, port), AuthHandler)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
@@ -50,7 +64,8 @@ def start_auth_server(port=8000):
 
 def get_authorization_code(client_id):
     """Get authorization code from Strava"""
-    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:8000&approval_prompt=force&scope=read,activity:read,activity:read_all"
+    host_ip = get_host_ip()
+    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://{host_ip}:8000&approval_prompt=force&scope=read,activity:read,activity:read_all"
     
     # Start local server
     server = start_auth_server()

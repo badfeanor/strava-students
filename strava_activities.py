@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlparse
 import threading
 import time
 import socket
+import urllib.parse
 
 # Настройка логирования
 logging.basicConfig(
@@ -93,6 +94,8 @@ class StravaAPI:
         self.client_secret = os.getenv('STRAVA_CLIENT_SECRET')
         self.access_token = None
         self.base_url = 'https://www.strava.com/api/v3'
+        self.redirect_uri = CALLBACK_URL
+        self.auth_url = 'https://www.strava.com/oauth/authorize'
         
         # Проверка наличия необходимых переменных окружения
         if not all([self.client_id, self.client_secret]):
@@ -135,16 +138,33 @@ class StravaAPI:
             logger.error(f"Error during code exchange: {str(e)}")
             raise
 
-    def get_athlete_activities(self, athlete_id, per_page=10):
-        """Get recent activities for a specific athlete"""
-        headers = {'Authorization': f'Bearer {self.access_token}'}
+    def get_authorization_url(self):
+        """Get the authorization URL for the user to visit."""
+        params = {
+            'client_id': self.client_id,
+            'response_type': 'code',
+            'redirect_uri': self.redirect_uri,
+            'approval_prompt': 'force',
+            'scope': 'read,activity:read,activity:read_all'  # Added activity:read_all scope
+        }
+        return f"{self.auth_url}?{urllib.parse.urlencode(params)}"
+
+    def get_activities(self, athlete_id, per_page=10):
+        """Get the last 10 activities for a specific athlete."""
         try:
-            logger.info(f"Fetching activities for athlete {athlete_id}")
-            response = requests.get(
-                f'{self.base_url}/athletes/{athlete_id}/activities',
-                headers=headers,
-                params={'per_page': per_page}
-            )
+            # First try to get the athlete's own activities
+            url = f"{self.base_url}/athlete/activities"
+            params = {
+                'per_page': per_page
+            }
+            response = requests.get(url, headers={'Authorization': f'Bearer {self.access_token}'}, params=params)
+            
+            if response.status_code == 200:
+                return response.json()
+            
+            # If that fails, try to get activities for the specific athlete
+            url = f"{self.base_url}/athletes/{athlete_id}/activities"
+            response = requests.get(url, headers={'Authorization': f'Bearer {self.access_token}'}, params=params)
             
             if response.status_code == 200:
                 return response.json()
@@ -152,7 +172,7 @@ class StravaAPI:
                 logger.error(f"Failed to get activities. Status code: {response.status_code}")
                 logger.error(f"Response: {response.text}")
                 raise Exception(f"Failed to get activities: {response.status_code}")
-            
+                
         except Exception as e:
             logger.error(f"Error fetching activities for athlete {athlete_id}: {str(e)}")
             raise
@@ -184,7 +204,7 @@ def main():
         
         for student_id in STUDENT_IDS:
             try:
-                activities = strava.get_athlete_activities(student_id)
+                activities = strava.get_activities(student_id)
                 df = format_activities(activities)
                 df['athlete_id'] = student_id
                 all_activities.append(df)

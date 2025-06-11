@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+# Получаем callback URL из переменных окружения или используем значение по умолчанию
+CALLBACK_URL = os.getenv('STRAVA_CALLBACK_URL', 'http://localhost:8000')
+
 def get_host_ip():
     """Get host IP address"""
     try:
@@ -64,8 +67,7 @@ def start_auth_server(port=8000):
 
 def get_authorization_code(client_id):
     """Get authorization code from Strava"""
-    host_ip = get_host_ip()
-    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://{host_ip}:8000&approval_prompt=force&scope=read,activity:read,activity:read_all"
+    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri={CALLBACK_URL}&approval_prompt=force&scope=read,activity:read,activity:read_all"
     
     # Start local server
     server = start_auth_server()

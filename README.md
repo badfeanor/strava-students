@@ -1,64 +1,120 @@
-# Strava Students Activities Analysis
+# Анализ активностей студентов Strava
 
-This project fetches the last 10 activities for a list of students from Strava API and saves them to a CSV file.
+Проект для выгрузки и анализа последних 10 активностей студентов из Strava API.
 
-## Setup
+## Описание
 
-1. Install the required dependencies:
+Скрипт выполняет следующие функции:
+- Аутентификация через Strava API с использованием OAuth 2.0
+- Получение последних 10 активностей для каждого студента
+- Сохранение данных в CSV файл с подробной информацией о каждой активности
+
+## Требования
+
+- Python 3.9+
+- Docker и Docker Compose (опционально)
+
+## Установка и настройка
+
+### 1. Клонирование репозитория
+```bash
+git clone https://github.com/badfeanor/strava-students.git
+cd strava-students
+```
+
+### 2. Настройка Strava API
+
+1. Создайте приложение в Strava:
+   - Перейдите на https://www.strava.com/settings/api
+   - Создайте новое приложение
+   - Сохраните Client ID и Client Secret
+
+2. Создайте файл `.env` в корневой директории проекта:
+```
+STRAVA_CLIENT_ID=ваш_client_id
+STRAVA_CLIENT_SECRET=ваш_client_secret
+STRAVA_REFRESH_TOKEN=ваш_refresh_token
+```
+
+3. Получение refresh token:
+   - Перейдите по ссылке: https://www.strava.com/oauth/authorize?client_id=ВАШ_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read,activity:read
+   - Авторизуйте приложение
+   - Скопируйте код из URL после редиректа
+   - Обменяйте код на токены:
+     ```bash
+     curl -X POST https://www.strava.com/oauth/token \
+     -F client_id=ВАШ_CLIENT_ID \
+     -F client_secret=ВАШ_CLIENT_SECRET \
+     -F code=КОД_АВТОРИЗАЦИИ \
+     -F grant_type=authorization_code
+     ```
+   - Используйте полученный refresh_token в файле .env
+
+### 3. Добавление ID студентов
+
+Отредактируйте список `student_ids` в файле `strava_activities.py`, добавив ID студентов Strava:
+```python
+student_ids = [
+    123456,  # ID студента 1
+    789012,  # ID студента 2
+    # ...
+]
+```
+
+## Использование
+
+### Запуск через Docker (рекомендуется)
+
+1. Создайте директорию для результатов:
+```bash
+mkdir output
+```
+
+2. Запустите приложение:
+```bash
+docker-compose up --build
+```
+
+### Запуск без Docker
+
+1. Установите зависимости:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Create a Strava API application:
-   - Go to https://www.strava.com/settings/api
-   - Create a new application
-   - Note down your Client ID and Client Secret
-
-3. Create a `.env` file in the project root with the following content:
-```
-STRAVA_CLIENT_ID=your_client_id_here
-STRAVA_CLIENT_SECRET=your_client_secret_here
-STRAVA_REFRESH_TOKEN=your_refresh_token_here
-```
-
-4. To get a refresh token:
-   - Visit: https://www.strava.com/oauth/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read,activity:read
-   - Authorize the application
-   - Copy the code from the redirect URL
-   - Exchange the code for tokens using:
-     ```
-     curl -X POST https://www.strava.com/oauth/token \
-     -F client_id=YOUR_CLIENT_ID \
-     -F client_secret=YOUR_CLIENT_SECRET \
-     -F code=AUTHORIZATION_CODE \
-     -F grant_type=authorization_code
-     ```
-   - Use the refresh_token from the response in your .env file
-
-5. Edit the `student_ids` list in `strava_activities.py` to include the Strava athlete IDs of your students.
-
-## Usage
-
-Run the script:
+2. Запустите скрипт:
 ```bash
 python strava_activities.py
 ```
 
-The script will:
-1. Authenticate with Strava API
-2. Fetch the last 10 activities for each student
-3. Save the results to `student_activities.csv`
+## Результаты
 
-## Output
+Скрипт создает файл `output/student_activities.csv` со следующей информацией:
+- Название активности
+- Тип активности
+- Расстояние (км)
+- Время в движении (минуты)
+- Общее время (минуты)
+- Общий набор высоты (метры)
+- Дата начала
+- Средняя скорость (км/ч)
+- Максимальная скорость (км/ч)
+- ID спортсмена
 
-The CSV file will contain the following information for each activity:
-- Activity name
-- Activity type
-- Distance (km)
-- Moving time (minutes)
-- Elapsed time (minutes)
-- Total elevation gain (meters)
-- Start date
-- Average speed (km/h)
-- Max speed (km/h)
-- Athlete ID 
+## Структура проекта
+
+```
+strava-students/
+├── .env                    # Конфигурация API (не включен в git)
+├── .gitignore             # Исключения для git
+├── Dockerfile             # Конфигурация Docker
+├── README.md             # Документация
+├── docker-compose.yml    # Конфигурация Docker Compose
+├── output/               # Директория для результатов
+├── requirements.txt      # Зависимости Python
+└── strava_activities.py  # Основной скрипт
+```
+
+## Лицензия
+
+MIT 

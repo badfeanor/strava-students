@@ -1,3 +1,8 @@
 requests==2.31.0
+python-dotenv==1.0.0
 pandas==2.1.4
-python-dotenv==1.0.0 
+urllib3==2.1.0
+logging
+http.server
+webbrowser
+threading 
